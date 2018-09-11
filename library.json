@@ -36,10 +36,8 @@
   {
     "name": "Crypto",
     "authors": "Chris Ellis",
-		"url": "https://github.com/intrbiz/arduino-crypto",
-    "architectures": esp8266,esp32"
+		"url": "https://github.com/intrbiz/arduino-crypto.git"
   }
-  
   ],
   "version": "2.0.0",
   "frameworks": "arduino",

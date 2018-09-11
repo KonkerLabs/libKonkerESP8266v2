@@ -1,3 +1,6 @@
+#ifndef konker
+#define konker
+
 #include "./helpers/globals.h"
 #include "./helpers/fileHelper.h"
 #include "./helpers/jsonhelper.h"
@@ -833,3 +836,5 @@ void konkerConfig(char rootURL[64], char productPefix[6], bool encripted){
 }
 
 #include "./manegement/firmwareUpdate.h"
+
+#endif
