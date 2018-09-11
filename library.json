@@ -1,11 +1,11 @@
 {
-  "name": "LibKonkerESP8266",
+  "name": "KonkerESP8266",
   "keywords": "Konker, ESP8266, MQTT, rest, iot",
   "description": "ESP8266 Library for Konker enabled products",
   "repository":
   {
     "type": "git",
-    "url": "https://github.com/KonkerLabs/LibKonkerESP8266"
+    "url": "https://github.com/KonkerLabs/KonkerESP8266"
   },
   "authors":
   [
