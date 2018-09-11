@@ -99,3 +99,12 @@ PROCEDURE
    http://192.168.4.1/wifisave?s=SSID_NAME&p=ENCRIPTED_SSID_PASSWORD
       OR IF konkerConfig encription flag is off
    http://192.168.4.1/wifisave?s=SSID_NAME&p=SSID_PASSWORD
+   
+   
+   
+   
+   
+ #Firmware updates
+ 
+ For firmware updates check just call the function: checkForUpdates();
+ Tip, dont leave the execution of checkForUpdates(); in the main loop.  Call this function hourly or dayly for example.
