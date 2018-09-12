@@ -14,6 +14,7 @@
 #define UPDATE_SUCCESS_CALLBACK_SIGNATURE void (*succes_update_callback)(char[16])
 #endif
 
+unsigned long _last_time_update_check=0;
 
 class ESP8266HTTPKonkerUpdate: public ESP8266HTTPUpdate{
   public:
@@ -112,8 +113,15 @@ bool hasUpdate(char const rootDomain[],int rootPort, char *version){
 }
 
 void checkForUpdates(char const rootDomain[],int rootPort, char *expectedVersion, UPDATE_SUCCESS_CALLBACK_SIGNATURE){
-    char version[16];
-    
+    //throtle this call at maximum 1 per minute
+    if ((millis()-_last_time_update_check) < 60000){
+        Serial.println("checkForUpdates maximum calls is 1/minute. Please wait more to call again"); 
+        return;
+	  }
+    _last_time_update_check = millis();
+
+
+    char version[16];    
     if (hasUpdate(rootDomain, rootPort, version)){
       if(String(version).indexOf(String(expectedVersion))>=0 || String(version)==""){
         Serial.println("UPDATING...."); 
