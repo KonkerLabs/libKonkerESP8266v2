@@ -835,6 +835,6 @@ void konkerConfig(char rootURL[64], char productPefix[6], bool encripted){
 
 }
 
-#include "./manegement/firmwareUpdate.h"
+#include "./management/firmwareUpdate.h"
 
 #endif
