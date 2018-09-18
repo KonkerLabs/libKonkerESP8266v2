@@ -80,11 +80,30 @@ bool hasUpdate(char const rootDomain[],int rootPort, char *version){
   bool subCode=0;
 
   String fwUpdateURL= "http://" + String(rootDomain) + String (":") + String(rootPort) + String("/firmware/") + String(device_login); 
-  
+  char buffer[100];
+  char bffPort[6];
+  if (String(rootDomain).indexOf("http://", 0)>0){
+    strcpy (buffer,rootDomain);
+    strcat (buffer,":");
+    strcat (buffer,bffPort);
+    strcat (buffer,"/firmware/");
+    strcat (buffer,device_login);
+
+  }else{
+    strcpy (buffer,"http://");
+    strcat (buffer,rootDomain);
+    strcat (buffer,":");
+    strcat (buffer,bffPort);
+    strcat (buffer,"/firmware/");
+    strcat (buffer,device_login);
+  }
+
+
+
   HTTPClient http;  //Declare an object of class HTTPClient
   http.addHeader("Content-Type", "application/json");
   http.setAuthorization(device_login, device_pass);
-  http.begin(fwUpdateURL);  //Specify request destination
+  http.begin((String)buffer);  //Specify request destination
   int httpCode = http.GET();
 
   Serial.println("Checking update: " + fwUpdateURL+ "; httpcode:" + String(httpCode));

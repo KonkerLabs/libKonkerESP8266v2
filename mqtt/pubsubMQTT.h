@@ -74,17 +74,27 @@ bool connectMQTT(){
 }
 
 
-void buildMQTTSUBTopic(char const device_login[], char const channel[], char *topic){
-  String SString;
-  SString = String(prefix) + String("/") + String(device_login) + String("/") + String(sub_dev_modifier) + String("/") + String(channel); //sub
-  SString.toCharArray(topic, SString.length()+1);
+void buildMQTTSUBTopic(char const channel[], char *topic){
+    strcpy (topic,prefix);
+    strcat (topic,"/");
+    strcat (topic,device_login);
+    strcat (topic,"/");
+    strcat (topic,sub_dev_modifier);
+    strcat(topic,"/");    
+    strcat (topic,channel);
 }
 
-void buildMQTTPUBTopic(char const device_login[], char const channel[], char *topic){
-  String SString;
-  SString = String(prefix) + String("/") + String(device_login) + String("/") + String(pub_dev_modifier) + String("/") + String(channel); //pub
-  SString.toCharArray(topic, SString.length()+1);
+void buildMQTTPUBTopic(char const channel[], char *topic){
+    strcpy (topic,prefix);
+    strcat (topic,"/");
+    strcat (topic,device_login);
+    strcat (topic,"/");
+    strcat (topic,pub_dev_modifier);
+    strcat(topic,"/");    
+    strcat (topic,channel);
 }
+
+
 
 
 
@@ -92,10 +102,10 @@ bool pubMQTT(char const channel[], char const msg[]){
   int pubCode=-1;
   char topic[32];
 
-  buildMQTTPUBTopic(device_login, channel, topic);
+  buildMQTTPUBTopic(channel, topic);
 
-  Serial.println("Publishing to: " + String(topic) + " msg: " + msg );
-  Serial.print(">");
+  //Serial.println("Publishing to: " + String(topic) + " msg: " + msg );
+  //Serial.print(">");
   delay(200);
   pubCode=client.publish(topic, msg);
 
@@ -121,10 +131,10 @@ bool subMQTT(char const channel[],CHANNEL_CALLBACK_SIGNATURE){
   int subCode=-1;
   char topic[32];
 
-  buildMQTTSUBTopic(device_login, channel, topic);
+  buildMQTTSUBTopic(channel, topic);
   
-  Serial.println("Subscribing to: " + String(topic));
-  Serial.print(">");
+  //Serial.println("Subscribing to: " + String(topic));
+  //Serial.print(">");
   delay(200);
   subCode=client.subscribe(topic);
 

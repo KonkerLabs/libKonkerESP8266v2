@@ -6,17 +6,60 @@
 
 unsigned long _last_time_http_request=0;
 unsigned long _millis_delay_per_http_request=1000;
-void buildHTTPSUBTopic(char const device_login[], char const channel[], char *topic){
-  String SString;
-  SString = String(sub_dev_modifier) + String("/") + String(device_login) + String("/") + String(channel); //sub
-  SString.toCharArray(topic, SString.length()+1);
+void buildHTTPSUBTopic(char const channel[], char *topic){
+  char bffPort[6];
+  itoa (_rootPort,bffPort,10);
+  if (String(_rootDomain).indexOf("http://", 0)>0){
+    strcpy (topic,_rootDomain);
+    strcat (topic,":");
+    strcat (topic,bffPort);
+    strcat (topic,"/");
+    strcat (topic,sub_dev_modifier);
+    strcat(topic,"/");   
+    strcat (topic,device_login);
+    strcat(topic,"/");
+    strcat (topic,channel);
+  }else{
+    strcpy (topic,"http://");
+    strcat (topic,_rootDomain);
+    strcat (topic,":");
+    strcat (topic,bffPort);
+    strcat (topic,"/");
+    strcat (topic,sub_dev_modifier);
+    strcat(topic,"/");    
+    strcat (topic,device_login);
+    strcat(topic,"/");
+    strcat (topic,channel);
+  }
 }
 
-void buildHTTPPUBTopic(char const device_login[], char const channel[], char *topic){
-  String SString;
-  SString =  String(pub_dev_modifier) + String("/") + String(device_login) + String("/") +  String(channel); //pub
-  SString.toCharArray(topic, SString.length()+1);
+void buildHTTPPUBTopic(char const channel[], char *topic){
+  char bffPort[6];
+  itoa (_rootPort,bffPort,10);
+  if (String(_rootDomain).indexOf("http://", 0)>0){
+    strcpy (topic,_rootDomain);
+    strcat (topic,":");
+    strcat (topic,bffPort);
+    strcat (topic,"/");
+    strcat (topic,pub_dev_modifier);
+    strcat(topic,"/");   
+    strcat (topic,device_login);
+    strcat(topic,"/");
+    strcat (topic,channel);
+  }else{
+    strcpy (topic,"http://");
+    strcat (topic,_rootDomain);
+    strcat (topic,":");
+    strcat (topic,bffPort);
+    strcat (topic,"/");
+    strcat (topic,pub_dev_modifier);
+    strcat(topic,"/");    
+    strcat (topic,device_login);
+    strcat(topic,"/");
+    strcat (topic,channel);
+  }
 }
+
 
 
 bool testHTTPSubscribeConn(){
@@ -26,27 +69,24 @@ bool testHTTPSubscribeConn(){
   }
   _last_time_http_request = millis();
   bool subCode=0;
-  char topic[32];
-  buildHTTPSUBTopic(device_login, "test", topic);
 
   HTTPClient http;  //Declare an object of class HTTPClient
   http.addHeader("Content-Type", "application/json");
   http.setAuthorization(device_login, device_pass);
 
-  String url_to_call;
-  if (String(_rootDomain).indexOf("http://", 0)>0){
-    url_to_call=String(_rootDomain) + String (":") + String(_rootPort)  + "/" + String(topic);  //Specify request destination
-  }else{
-    url_to_call=String("http://") + String(_rootDomain)  + String (":") + String(_rootPort) + "/" + String(topic);  //Specify request destination
-  }
+  char buffer[100];
 
-  http.begin(url_to_call);  //Specify request destination
+  buildHTTPSUBTopic("test",buffer);
+
+  http.begin((String)buffer);
+
   int httpCode = http.GET();
 
-  Serial.println("Testing HTTP subscribe to: " + url_to_call + "; httpcode:" + String(httpCode));
-  Serial.print(">");
+  //Serial.println("Testing HTTP subscribe to: " + url_to_call + "; httpcode:" + String(httpCode));
+  //Serial.print(">");
 
   subCode=interpretHTTPCode(httpCode);
+
 
   if (!subCode){
     Serial.println("failed");
@@ -74,27 +114,26 @@ bool pubHttp(char const channel[], char const msg[]){
   _last_time_http_request = millis();
 
   bool pubCode=0;
-  char topic[32];
 
-  buildHTTPPUBTopic(device_login, channel, topic);
 
   HTTPClient http;  //Declare an object of class HTTPClient
   http.addHeader("Content-Type", "application/json");
   http.addHeader("Accept", "application/json");
   http.setAuthorization(device_login, device_pass);
 
-  if (String(_rootDomain).indexOf("http://", 0)>0){
-    http.begin(String(_rootDomain)  + String (":") + String(_rootPort) + "/" + String(topic));  //Specify request destination
-  }else{
-    http.begin(String("http://") + String(_rootDomain)  + String (":") + String(_rootPort) + "/" + String(topic));  //Specify request destination
-  }
+  char buffer[100];
+
+  buildHTTPPUBTopic(channel,buffer);
+
+  http.begin((String)buffer);
 
   int httpCode=http.POST(String(msg));
-  Serial.println("Publishing to " + String(topic) + "; Body: " + String(msg) + "; httpcode: " + String(httpCode));
-  Serial.print(">");
+  //Serial.println("Publishing to " + String(topic) + "; Body: " + String(msg) + "; httpcode: " + String(httpCode));
+  //Serial.print(">");
   http.end();   //Close connection
 
   pubCode=interpretHTTPCode(httpCode);
+
 
   if (!pubCode){
     Serial.println("failed");
@@ -118,29 +157,27 @@ bool subHttp(char const channel[],CHANNEL_CALLBACK_SIGNATURE){
   }
   _last_time_http_request = millis();
 
-
   bool subCode=0;
-  char topic[32];
 
-  buildHTTPSUBTopic(device_login, channel, topic);
 
   HTTPClient http;  //Declare an object of class HTTPClient
   http.addHeader("Content-Type", "application/json");
   http.setAuthorization(device_login, device_pass);
 
-  if (String(_rootDomain).indexOf("http://", 0)>0){
-    http.begin(String(_rootDomain)  + String (":") + String(_rootPort) + "/" + String(topic));  //Specify request destination
-  }else{
-    http.begin(String("http://") + String(_rootDomain)  + String (":") + String(_rootPort) + "/" + String(topic));  //Specify request destination
-  }
-  
+  char buffer[100];
+
+  buildHTTPSUBTopic(channel,buffer);
+
+  http.begin((String)buffer);
+
   int httpCode = http.GET();
 
-  Serial.println("Subscribing to: " + String(topic) + "; httpcode:" + String(httpCode));
+
+  //Serial.println("Subscribing to: " + pubURL + " httpcode:" + String(httpCode));
   Serial.print(">");
 
   subCode=interpretHTTPCode(httpCode);
-
+  
   if (!subCode){
     Serial.println("failed");
     Serial.println("");
@@ -150,7 +187,7 @@ bool subHttp(char const channel[],CHANNEL_CALLBACK_SIGNATURE){
     Serial.println("");
 
     String strPayload = http.getString();
-    Serial.println("strPayload=" + strPayload);
+    //Serial.println("strPayload=" + strPayload);
     int playloadSize=http.getSize();
     http.end();   //Close connection
     if (strPayload!="[]"){    
