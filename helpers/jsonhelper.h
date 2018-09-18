@@ -2,6 +2,7 @@
 #define jsonhelper
 
 #include <ArduinoJson.h>
+#include "./helpers/fileHelper.h"
 //Buffer das mensagens MQTT
 char bufferJ[1024];
 
@@ -42,7 +43,6 @@ long long char2LL(char *str){
 
 
 
-
 bool parse_JSON_item(JsonObject& jsonMSG, char *itemName, char *returnVal){
 	if (jsonMSG.containsKey(itemName)){
 		strcpy(returnVal,jsonMSG[itemName]);
@@ -51,6 +51,11 @@ bool parse_JSON_item(JsonObject& jsonMSG, char *itemName, char *returnVal){
 		return 0;
 	}
 }
+
+bool parse_JSONArr_item(JsonObject& jsonMSG, char *itemName, char *returnVal){
+	return parse_JSON_item(jsonMSG,itemName, returnVal);
+}
+
 
 //----------------- Decodificacao da mensagem Json In -----------------------------
 bool parse_JSON_item(String json, char *itemName, char *returnVal){
@@ -130,6 +135,72 @@ void updateJSON(JsonObject& jsonToUpdate, JsonObject& jsonNewValues){
 
 
 
+unsigned int updateJsonArrayFile(String filePath, JsonObject& jsonNewValues, unsigned int arrayIndex){
+	char fileContens[1024];
+	//first read file...
+	Serial.println("updateJsonArrayFile, opening file to update");
+	if(readFile(filePath,fileContens)){
+		Serial.println("Parsing: " + (String)fileContens);
+	}else{
+		Serial.println("Failed to open, creating it :" + filePath);
+		StaticJsonBuffer<200> jsonBuffer;
+		JsonArray& array = jsonBuffer.createArray();
+		array.add(jsonNewValues);
+		array.printTo(bufferJ, sizeof(bufferJ));
+		if(!saveFile(filePath, bufferJ)){
+			Serial.println("Failed to create file : " + filePath);
+			return 0;
+		}else{
+			return 1;
+		}
+	}
+
+
+
+	//updating file
+	DynamicJsonBuffer jsonBuffer;
+	JsonArray& array = jsonBuffer.parseArray(fileContens);
+	if (array.success()) {
+		String jsonStr;
+		jsonNewValues.printTo(jsonStr);
+		Serial.println("jsonNewValues: " + jsonStr);
+		Serial.println("Updating jsonarray readed from file");
+		Serial.println("Current size:" +String(array.size()));
+		if(arrayIndex<=(array.size()-1) && arrayIndex>0){
+			updateJSON(array[arrayIndex],jsonNewValues);
+		}else{
+			array.add(jsonNewValues);
+		}
+
+
+		Serial.println("Saving file with changed values..");
+		array.printTo(bufferJ, sizeof(bufferJ));
+
+		if(saveFile(filePath, bufferJ)){
+			return array.size();
+		}else{
+			return 0;
+		}
+	}else{
+		Serial.println("Failed to read Json file");
+		return 0;
+	}
+}
+
+
+unsigned int updateJsonArrayFile(String filePath, String jsonString, unsigned int arrayIndex){
+	Serial.println("updateJsonArrayFile, parsing jsonString..");
+	//updating file
+	DynamicJsonBuffer jsonBuffer;
+	JsonObject& jsonParsed = jsonBuffer.parseObject(jsonString);
+	if (jsonParsed.success()) {
+		return updateJsonArrayFile(filePath,jsonParsed, arrayIndex);
+	}else{
+		Serial.println("Failed to parse: " + jsonString);
+		return 0;
+	}
+}
+
 bool updateJsonFile(String filePath, JsonObject& jsonNewValues){
 	char fileContens[1024];
 	//first read file...
@@ -166,7 +237,6 @@ bool updateJsonFile(String filePath, JsonObject& jsonNewValues){
 }
 
 
-
 bool updateJsonFile(String filePath, String jsonString){
 	Serial.println("updateJsonFile, parsing jsonString..");
 	//updating file
@@ -178,7 +248,6 @@ bool updateJsonFile(String filePath, String jsonString){
 		Serial.println("Failed to parse: " + jsonString);
 		return 0;
 	}
-
 }
 
 
@@ -204,6 +273,31 @@ bool  getJsonItemFromFile(String filePath, char *itemName, char *returnVal){
 	}
 }
 
+
+bool  getJsonArrayItemFromFile(String filePath, unsigned int arrayIndex, char *itemName, char *returnVal){
+	char jsonfileContens[1024];
+	//first read file...
+	Serial.println("Opening file to read");
+	if(readFile(filePath,jsonfileContens)){
+		Serial.println("Parsing: " + (String)jsonfileContens);
+	}else{
+		Serial.println("Failed to open file: " + filePath);
+		return 0;
+	}
+
+	//updating file
+	DynamicJsonBuffer jsonBuffer;
+	JsonArray& array = jsonBuffer.parseArray(jsonfileContens);
+	if (array.success()) {
+		if(arrayIndex>(array.size()-1)){
+			return 0;
+		}
+		return parse_JSONArr_item(array[arrayIndex],itemName,returnVal);
+	}else{
+		Serial.println("Failed to read Json file");
+		return 0;
+	}
+}
 
 
 

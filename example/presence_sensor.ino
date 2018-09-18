@@ -21,8 +21,7 @@ char typeC[32];
 int presenceCount=0;
 bool presenceDetected=0;
 unsigned long lasttimeCheck=0;
-
-ADC_MODE(ADC_VCC);
+int statusLed=D2;
 
 
 void enviaPresencas(){
@@ -48,14 +47,8 @@ void enviaPresencas(){
       Serial.println("A mensagem:");
       Serial.println(mensagemjson);
 
-      if(!pubMQTT(status_channel, mensagemjson)){
-        appendToFile(healthFile,(char*)"1", _mqttFailureAdress);
+      pubMQTT(status_channel, mensagemjson);
 
-        delay(3000);
-        ESP.restart();
-      }else{
-        healthUpdate(health_channel);
-      }
 }
 
 
@@ -93,13 +86,15 @@ void ledCallback(byte* payload, unsigned int length){
     char ligado[8];
     if(parseJSON_data(receivedMsg,"ligado",ligado)){
         bool state =atoi(ligado);
-        digitalWrite(D2, state);
+        digitalWrite(statusLed, state);
         Serial.println("Led : " + String(state));
     }else{ 
         Serial.println("Failed to parse");
     }
 
 }
+
+
 
 void setup(){
     Serial.begin(115200);
@@ -113,27 +108,17 @@ void setup(){
     //change flag to true to use encripted wifi password
     konkerConfig((char*)"data.demo.konkerlabs.net:80",(char*)"S0101",false);
 
-    //statusUpdate();
-
-    pinMode(D2, OUTPUT);
-    
-    
+    pinMode(statusLed, OUTPUT);    
     pinMode(presence_pin, INPUT);
 
-	Serial.println("Setup finished");
-	//Serial.println("Turning off Wifi");
-	//client.disconnect();
-	//WiFi.mode(WIFI_OFF);
-	delay(1000);
-
-
     lasttimeCheck = millis();
-
+    Serial.println("Setup finished");
 }
 
 void loop(){
-
     konkerLoop();
+
+
     delay(100);
     presencafunc();
     
@@ -142,8 +127,6 @@ void loop(){
     if ((millis()-lasttimeCheck) > intPeriodoEnvio){
 
         enviaPresencas();
-
-        checkForUpdates();
 
         lasttimeCheck = millis();
         presenceCount=0;

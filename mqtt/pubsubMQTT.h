@@ -3,6 +3,8 @@
 
 #include "../helpers/globals.h"
 #include <PubSubClient.h>
+#include "./management/sendHealth.h"
+#include "./helpers/fileHelper.h"
 
 #ifdef konkerMQTTs
   WiFiClientSecure espClient;
@@ -59,6 +61,9 @@ bool connectMQTT(char r_server[], int r_port, char r_device_login[], char r_devi
     }else{
       Serial.println("failed");
       Serial.println("");
+      appendToFile(healthFile,(char*)"1", _mqttFailureAdress);
+      delay(3000);
+      ESP.reset();
       return 0;
 		}
 }
@@ -98,6 +103,9 @@ bool pubMQTT(char const channel[], char const msg[]){
     Serial.println("failed");
     Serial.println("pubCode:" + (String)pubCode);
     failedComm=1;
+    appendToFile(healthFile,(char*)"1", _mqttFailureAdress);
+    delay(3000);
+    ESP.reset();
     return 0;
   }else{
     Serial.println("sucess");
@@ -124,6 +132,9 @@ bool subMQTT(char const channel[],CHANNEL_CALLBACK_SIGNATURE){
     Serial.println("failed");
     Serial.println("");
     failedComm=1;
+    appendToFile(healthFile,(char*)"1", _mqttFailureAdress);
+    delay(3000);
+    ESP.reset();
     return 0;
   }else{
     addSubChannelTuple(topic,chan_callback);

@@ -113,11 +113,14 @@ bool hasUpdate(char const rootDomain[],int rootPort, char *version){
 }
 
 void checkForUpdates(char const rootDomain[],int rootPort, char *expectedVersion, UPDATE_SUCCESS_CALLBACK_SIGNATURE){
-    //throtle this call at maximum 1 per minute
-    if ((millis()-_last_time_update_check) < 60000){
-        Serial.println("checkForUpdates maximum calls is 1/minute. Please wait more to call again"); 
-        return;
-	  }
+    if (_last_time_update_check!=0){
+      //throtle this call at maximum 1 per minute
+      if ((millis()-_last_time_update_check) < 60000){
+          //Serial.println("checkForUpdates maximum calls is 1/minute. Please wait more to call again"); 
+          return;
+      }
+    }
+
     _last_time_update_check = millis();
 
 

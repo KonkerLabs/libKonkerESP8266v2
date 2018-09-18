@@ -4,7 +4,8 @@
 #include "../helpers/globals.h"
 #include <ESP8266HTTPClient.h>
 
-
+unsigned long _last_time_http_request=0;
+unsigned long _millis_delay_per_http_request=1000;
 void buildHTTPSUBTopic(char const device_login[], char const channel[], char *topic){
   String SString;
   SString = String(sub_dev_modifier) + String("/") + String(device_login) + String("/") + String(channel); //sub
@@ -19,6 +20,11 @@ void buildHTTPPUBTopic(char const device_login[], char const channel[], char *to
 
 
 bool testHTTPSubscribeConn(){
+    //throtle this call 
+  if ((millis()-_last_time_http_request) < _millis_delay_per_http_request){
+      delay((millis()-_last_time_http_request));
+  }
+  _last_time_http_request = millis();
   bool subCode=0;
   char topic[32];
   buildHTTPSUBTopic(device_login, "test", topic);
@@ -45,6 +51,7 @@ bool testHTTPSubscribeConn(){
   if (!subCode){
     Serial.println("failed");
     Serial.println("");
+    http.end();   //Close connection
     return 0;
   }else{
     Serial.println("sucess");
@@ -60,6 +67,12 @@ bool testHTTPSubscribeConn(){
 
 
 bool pubHttp(char const channel[], char const msg[]){
+  //throtle this call 
+  if ((millis()-_last_time_http_request) < _millis_delay_per_http_request){
+      delay((millis()-_last_time_http_request));
+  }
+  _last_time_http_request = millis();
+
   bool pubCode=0;
   char topic[32];
 
@@ -99,6 +112,13 @@ bool pubHttp(char const channel[], char const msg[]){
 
 
 bool subHttp(char const channel[],CHANNEL_CALLBACK_SIGNATURE){
+  //throtle this call 
+  if ((millis()-_last_time_http_request) < _millis_delay_per_http_request){
+      delay((millis()-_last_time_http_request));
+  }
+  _last_time_http_request = millis();
+
+
   bool subCode=0;
   char topic[32];
 
@@ -139,7 +159,7 @@ bool subHttp(char const channel[],CHANNEL_CALLBACK_SIGNATURE){
     }
     return 1;
   }
-
+  http.end();   //Close connection
   return 0;
 }
 

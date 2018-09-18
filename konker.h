@@ -7,6 +7,8 @@
 #include <Ticker.h>
 #include <Crypto.h>
 #include "./rest/pubsubREST.h"
+#include "./management/firmwareUpdate.h"
+#include "./management/sendHealth.h"
 
 extern "C" {
   #include "user_interface.h"
@@ -16,15 +18,19 @@ int _STATUS_LED=2;
 
 #define DEBUG 1
 
-char savedSSID[32]="";
-char savedPSK[64]="";
-String wifiFile="/wifi.json";
-String healthFile="/health.json";
-char health_channel[]="health";
+struct wifi_credentials
+{
+	char savedSSID[32];
+	char savedPSK[64];
+};
+typedef struct wifi_credentials WifiCredentials;
 
-int _netFailureAdress=0;
-int _mqttFailureAdress=1;
-int _httpFailureAdress=2;
+WifiCredentials wifiCredentials[3];
+unsigned int numWifiCredentials=1;
+
+String wifiFile="/wifi.json";
+
+
 
 bool _encripted=true;
 //WiFiServer httpServer(80);// create object
@@ -33,8 +39,11 @@ ESP8266WebServer webServer(80);
 void resetALL(){
 		WiFi.begin("", "");
 		WiFi.disconnect(true);
-		strcpy(savedSSID, "");
-		strcpy(savedPSK, "");
+		for(int i=0;i<3;i++){
+			strcpy(wifiCredentials[i].savedSSID, "");
+			strcpy(wifiCredentials[i].savedPSK, "");
+		}
+
 		formatFileSystem();
 		Serial.println("Full reset done! FileSystem formated!");
 		Serial.println("You must remove this device from Konker plataform if registred, and redo factory configuration.");
@@ -53,47 +62,13 @@ void setName(char newName[6]){
 
 
 
-//envia mensagem para a plataforma
-void healthUpdate(char *health_channel){
-
-	StaticJsonBuffer<100> jsonBuffer;
-	JsonObject& jsonMSG = jsonBuffer.createObject();
-
-	delay(10);
-
-  char content[3];
-  readFile(healthFile,content,0,3);
-  int nf = content[_netFailureAdress] - '0';
-  int mf = content[_mqttFailureAdress] - '0';
-	int hf = content[_httpFailureAdress] - '0';
-
-	//{"p":0}
-  jsonMSG["build"] = (String)PIO_SRC_REV;
-  jsonMSG["nfail"] = nf;
-  jsonMSG["mfail"] = mf;
-	jsonMSG["hfail"] = hf;
-
-  jsonMSG.printTo(bufferJ, sizeof(bufferJ));
-	char mensagemjson[1024];
-  strcpy(mensagemjson,bufferJ);
-	Serial.println("Publishing on channel:" + (String)health_channel);
-	Serial.println("The message:");
-	Serial.println(mensagemjson);
-
-	pubHttp(health_channel, mensagemjson);
-
-  if(nf==0 && mf==0 && hf==0){
-    return;
-  }
-  //clear error flags
-  saveFile(healthFile,(char*)"000");
-
-}
 
 void konkerLoop(){
 	#ifdef pubsubMQTT
 		MQTTLoop();
 	#endif
+	checkForUpdates();
+	healthUpdate(_health_channel);
 	
 }
 
@@ -109,6 +84,7 @@ WL_CONNECT_FAILED = 4
 WL_CONNECTION_LOST = 5
 WL_DISCONNECTED = 6*/
 //garantee a disconection before trying to connect
+int __wifiTimout=10000;
 int connectWifi(char *ssid, char *pass) {
 	WiFi.mode(WIFI_OFF);
 	delay(100);
@@ -119,7 +95,12 @@ int connectWifi(char *ssid, char *pass) {
 	WiFi.begin(ssid, pass);
 
 
-	int connRes = WiFi.waitForConnectResult();
+	int wifiStartTime=millis();
+	while(WiFi.status() != WL_CONNECTED && (millis()-wifiStartTime)<__wifiTimout) {
+			delay(100);
+	}
+
+	int connRes = WiFi.status();
 	Serial.println("connRes=" + (String)connRes);
 	return connRes;
 }
@@ -148,6 +129,16 @@ bool saveWifiInFile(String wifiFile, char *ssid, char *psk){
 }
 
 
+unsigned int saveWifiConnectionInFile(String wifiFile, char *ssid, char *psk, unsigned int arrayIndex){
+
+  String json="{\"s\":\"" + (String)ssid + "\",\"p\":\"" + (String)psk + "\"}";
+	Serial.print("saving json = ");
+	Serial.println(json);
+  char charJson[112];
+  json.toCharArray(charJson, 112);
+  return updateJsonArrayFile(wifiFile, charJson, arrayIndex);
+}
+
 bool getWifiFromFile(String wifiFile, char *ssid, char *psk){
    if(getJsonItemFromFile(wifiFile,(char*)"s",ssid) &&
    getJsonItemFromFile(wifiFile,(char*)"p",psk)){
@@ -161,30 +152,57 @@ bool getWifiFromFile(String wifiFile, char *ssid, char *psk){
 	 }
 }
 
+bool getWifiConnectionFromFile(String wifiFile, char *ssid, char *psk, unsigned int arrayIndex){
+   if(getJsonArrayItemFromFile(wifiFile,arrayIndex,(char*)"s",ssid) &&
+   getJsonArrayItemFromFile(wifiFile,arrayIndex,(char*)"p",psk)){
+		 if (ssid[0] == '\0'){
+			 Serial.println("ssid is empty!");
+			 return 0;
+		 }else{
+			 return 1;
+		 }
+	 }else{
+		 return 0;
+	 }
+}
 
-bool tryConnectClientWifi(){
+
+
+
+bool tryConnectClientWifi(unsigned int wifiNum){
 	char fileSavedSSID[32]={'\0'};
 	char fileSavedPSK[64]={'\0'};
-	if(!getWifiFromFile(wifiFile,fileSavedSSID,fileSavedPSK) && savedSSID[0]=='\0'){
-    return 0;
-  }
+
+
+	if(!getWifiConnectionFromFile(wifiFile,fileSavedSSID,fileSavedPSK, wifiNum) && wifiCredentials[wifiNum].savedSSID[0]=='\0'){
+		return 0;
+	}
+
+	if(fileSavedSSID[0]=='\0' && wifiCredentials[wifiNum].savedSSID[0]=='\0'){
+		Serial.println("No credentials for wifiNum = " + String(wifiNum));
+		return 0;
+	}
+
+
 	Serial.println("fileSavedSSID=" + (String)fileSavedSSID);
 	Serial.println("fileSavePSK=" + (String)fileSavedPSK);
+
+
   //check if we have ssid and pass and force those, if not, try with last saved values
 	int connRes;
 	if(strcmp(fileSavedSSID,"")!=0){
 		if (fileSavedSSID[0]!='\0'){
-			Serial.println("Tring to connect to saved WiFi  (will try 5 times):" +  (String)fileSavedSSID);
-			connRes=connectWifi(fileSavedSSID,fileSavedPSK,5);
+			Serial.println("Tring to connect to saved WiFi  (will try 2 times):" +  (String)fileSavedSSID);
+			connRes=connectWifi(fileSavedSSID,fileSavedPSK,2);
 		}else{
-			Serial.println("Tring to connect to WiFi (will try 3 times):" +  (String)savedSSID);
-			connRes=connectWifi(savedSSID,savedPSK,3);
+			Serial.println("Tring to connect to WiFi (will try 2 times):" +  (String)wifiCredentials[wifiNum].savedSSID);
+			connRes=connectWifi(wifiCredentials[wifiNum].savedSSID,wifiCredentials[wifiNum].savedPSK,2);
 		}
 
 	}else{
-		if(savedSSID[0]!='\0'){
-			Serial.println("Tring to connect to WiFi (will try 3 times):" +  (String)savedSSID);
-			connRes=connectWifi(savedSSID,savedPSK,3);
+		if(wifiCredentials[wifiNum].savedSSID[0]!='\0'){
+			Serial.println("Tring to connect to WiFi (will try 2 times):" +  (String)wifiCredentials[wifiNum].savedSSID);
+			connRes=connectWifi(wifiCredentials[wifiNum].savedSSID,wifiCredentials[wifiNum].savedPSK,2);
 		}else{
 			Serial.println("No WiFi saved, ignoring...");
 			return 0;
@@ -199,6 +217,16 @@ bool tryConnectClientWifi(){
 		Serial.println("Failed!");
 		return 0;
 	}
+}
+
+
+bool tryConnectClientWifi(){
+	for(int i=0;i<3;i++){
+		if(tryConnectClientWifi(i)){
+			return 1;
+		}
+	}
+	return 0;
 }
 
 
@@ -229,9 +257,6 @@ bool connectToWiFiAndPubSubServers(){
 
 	return 1;
 }
-
-
-
 
 
 
@@ -507,60 +532,74 @@ void getWifiCredentialsEncripted(){
 	String page = "<http><body><b>getWifiCredentials</b></body></http>";
 
 
-	String argSSID = webServer.arg("s");
-	String argPSK = webServer.arg("p");
-	Serial.println("argSSID=" + argSSID);
-	Serial.println("argPSK=" + argPSK);
-	if(argSSID!="" && argPSK!=""){
-		argSSID.toCharArray(savedSSID, 32);
-		//argPSK.toCharArray(savedPSK, 64);
-		gotCredentials=1;
-    //Decrypt Password
-    char pass[argPSK.length()+1];
-    argPSK.toCharArray(pass, argPSK.length()+1);
-    char mySSID[argSSID.length()+1];
-    argSSID.toCharArray(mySSID, argPSK.length()+1);
-    char iv1[17] = "AnE9cKLPxGwyPPVU";
-    char iv2[17] = "sK33DE5TaC9nRUSt";
-    uint8_t var3[64];
-    uint8_t var4[64];
-		uint8_t *convKeyLogin=convert_key(device_login);
-		uint8_t *convKeySSID=convert_key(mySSID);
+	//get up to 3 wifi credentials
+	for(int i=0;i<3;i++){
+		String argSSID = webServer.arg("s" + String(i));
+		String argPSK = webServer.arg("p" + String(i));
 
-		Serial.print("convert_key(device_login): " + String(device_login) + " ");
-		for (int i = 0; i < 16; i++) {
-				Serial.print(convKeyLogin[i]);
+		Serial.println("argSSID" + String(i) + "=" + argSSID);
+		Serial.println("argPSK" + String(i) + "=" + argPSK);
+
+		if(argSSID!="" && argPSK!=""){
+			argSSID.toCharArray(wifiCredentials[i].savedSSID, 32);
+			//argPSK.toCharArray(savedPSK, 64);
+			numWifiCredentials++;
+			gotCredentials=1;
+			//Decrypt Password
+			char pass[argPSK.length()+1];
+			argPSK.toCharArray(pass, argPSK.length()+1);
+			char mySSID[argSSID.length()+1];
+			argSSID.toCharArray(mySSID, argPSK.length()+1);
+			char iv1[17] = "AnE9cKLPxGwyPPVU";
+			char iv2[17] = "sK33DE5TaC9nRUSt";
+			uint8_t var3[64];
+			uint8_t var4[64];
+			uint8_t *convKeyLogin=convert_key(device_login);
+			uint8_t *convKeySSID=convert_key(mySSID);
+
+			Serial.print("convert_key(device_login): " + String(device_login) + " ");
+			for (int j = 0; j < 16; j++) {
+					Serial.print(convKeyLogin[j]);
+			}
+			Serial.println("");
+
+			Serial.print("convert_key(mySSID): "+ String(mySSID)+ " ");
+			for (int j = 0; j < 16; j++) {
+					Serial.print(convKeySSID[j]);
+			}
+			Serial.println("");
+
+			AES deck1(convert_key(device_login), convert_iv(iv2), AES::AES_MODE_128, AES::CIPHER_DECRYPT);
+			AES deck2(convert_key(mySSID), convert_iv(iv1), AES::AES_MODE_128, AES::CIPHER_DECRYPT);
+			deck1.process(convert_hex(pass), var3, plength);
+			deck2.process(var3, var4, plength);
+			for (int j = 0; j < plength; j++) {
+					wifiCredentials[i].savedPSK[j]=var4[j];
+			}
+			for (int j = 1; j <= plength; j++) {
+					if (wifiCredentials[i].savedPSK[plength-j]==' ' || wifiCredentials[i].savedPSK[plength-j] == '\0'){
+						wifiCredentials[i].savedPSK[plength-j]='\0';
+					}else {
+						Serial.printf("char @ position %d = %c", j, wifiCredentials[i].savedPSK[plength-j]);
+						Serial.printf("psk%d='%s'", i, wifiCredentials[i].savedPSK);
+						break;
+					}
+			}
+
+		
+
+			// reset wifi credentials from file
+			//Removing the Wifi Configuration
+			SPIFFS.remove(wifiFile);
+
+
 		}
-		Serial.println("");
-
-		Serial.print("convert_key(mySSID): "+ String(mySSID)+ " ");
-		for (int i = 0; i < 16; i++) {
-				Serial.print(convKeySSID[i]);
-		}
-		Serial.println("");
-
-    AES deck1(convert_key(device_login), convert_iv(iv2), AES::AES_MODE_128, AES::CIPHER_DECRYPT);
-    AES deck2(convert_key(mySSID), convert_iv(iv1), AES::AES_MODE_128, AES::CIPHER_DECRYPT);
-    deck1.process(convert_hex(pass), var3, plength);
-    deck2.process(var3, var4, plength);
-    for (int i = 0; i < plength; i++) {
-        savedPSK[i]=var4[i];
-    }
-    for (int i = 1; i <= plength; i++) {
-        if (savedPSK[plength-i]==' ' || savedPSK[plength-i] == '\0' ) savedPSK[plength-i]='\0';
-        else {
-					Serial.printf("char @ position %d = %c", i, savedPSK[plength-i]);
-					Serial.printf("psk='%s'", savedPSK);
-					break;
-				}
-    }
-
-		// reset wifi credentials from file
-		//Removing the Wifi Configuration
-		SPIFFS.remove(wifiFile);
-
 
 	}
+
+
+
+	
 	webServer.send(200, "text/html", page);
 
 
@@ -572,22 +611,29 @@ void getWifiCredentialsNotEncripted(){
 	Serial.println("Handle getWifiCredentials");
 	String page = "<http><body><b>getWifiCredentials</b></body></http>";
 
+	//get up to 3 wifi credentials
+	for(int i=0;i<3;i++){
+		String argSSID = webServer.arg("s" + String(i));
+		String argPSK = webServer.arg("p" + String(i));
 
-	String argSSID = webServer.arg("s");
-	String argPSK = webServer.arg("p");
-	Serial.println("argSSID=" + argSSID);
-	Serial.println("argPSK=" + argPSK);
-	if(argSSID!="" && argPSK!=""){
-		argSSID.toCharArray(savedSSID, 32);
-		argPSK.toCharArray(savedPSK, 64);
-		gotCredentials=1;
+		Serial.println("argSSID" + String(i) + "=" + argSSID);
+		Serial.println("argPSK" + String(i) + "=" + argPSK);
 
 
-		// reset wifi credentials from file
-		//Removing the Wifi Configuration
-		SPIFFS.remove(wifiFile);
+		if(argSSID!="" && argPSK!=""){
+			argSSID.toCharArray(wifiCredentials[i].savedSSID, 32);
+			argPSK.toCharArray(wifiCredentials[i].savedPSK, 64);
+			numWifiCredentials++;
+			gotCredentials=1;
 
+
+			// reset wifi credentials from file
+			//Removing the Wifi Configuration
+			SPIFFS.remove(wifiFile);
+
+		}
 	}
+
 	webServer.send(200, "text/html", page);
 }
 
@@ -749,12 +795,37 @@ void konkerConfig(char rootURL[64], char productPefix[6], bool encripted){
 	int arquivoWifiPreConfigurado=0;
 
 	if(strcmp(WiFi.SSID().c_str(),(char*)"KonkerDevNetwork")!=0){
-		if(strcmp(WiFi.SSID().c_str(),"")!=0){
+		if(WiFi.SSID().c_str()[0]!='\0'){
 			Serial.println("Saving wifi memory");
-			strcpy(savedSSID, WiFi.SSID().c_str());
-			strcpy(savedPSK, WiFi.psk().c_str());
-			Serial.printf("saving wifi '%s' password '%s'\n", savedSSID, savedPSK);
-			saveWifiInFile(wifiFile,savedSSID,savedPSK);
+
+			//ordering
+			for(int i=0;i<numWifiCredentials-1;i++){
+				char tempSSID[32]="";
+				char tempPSK[64]="";
+				strcpy(tempSSID, wifiCredentials[i].savedSSID);
+				strcpy(tempPSK, wifiCredentials[i].savedPSK);
+				if(String(tempSSID).indexOf(WiFi.SSID(), 0)>0){
+					if(i==1){
+							strcpy(wifiCredentials[1].savedSSID, wifiCredentials[0].savedSSID);
+							strcpy(wifiCredentials[1].savedPSK, wifiCredentials[0].savedPSK);
+							
+							strcpy(wifiCredentials[0].savedSSID, tempSSID);
+							strcpy(wifiCredentials[0].savedPSK, tempPSK);
+					}
+					if(i==2){
+							strcpy(wifiCredentials[2].savedSSID, wifiCredentials[0].savedSSID);
+							strcpy(wifiCredentials[2].savedPSK, wifiCredentials[0].savedPSK);
+							
+							strcpy(wifiCredentials[0].savedSSID, tempSSID);
+							strcpy(wifiCredentials[0].savedPSK, tempPSK);
+					}
+				}
+			}
+
+			for(int i=0;i<numWifiCredentials-1;i++){
+				Serial.printf("saving wifi '%s' password '%s'\n", wifiCredentials[i].savedSSID, wifiCredentials[i].savedPSK);
+				saveWifiConnectionInFile(wifiFile, wifiCredentials[i].savedSSID, wifiCredentials[i].savedPSK,i);
+			}
 		}
 	}else{
 		Serial.println("Wifi memory has KonkerDevNetwork, ignoring..");
@@ -819,9 +890,11 @@ void konkerConfig(char rootURL[64], char productPefix[6], bool encripted){
 
 		Serial.println("WiFi configuration done!");
 		Serial.println("Saving wifi memory");
-		strcpy(savedSSID, WiFi.SSID().c_str());
-		strcpy(savedPSK, WiFi.psk().c_str());
-		saveWifiInFile(wifiFile,savedSSID,savedPSK);
+		for(int i=0;i<numWifiCredentials;i++){
+			saveWifiConnectionInFile(wifiFile,wifiCredentials[i].savedSSID,wifiCredentials[i].savedPSK, i);
+		}
+
+
 		delay(1000);
 		Serial.println("Rebooting...");
 		ESP.reset();
@@ -835,6 +908,6 @@ void konkerConfig(char rootURL[64], char productPefix[6], bool encripted){
 
 }
 
-#include "./management/firmwareUpdate.h"
+
 
 #endif
