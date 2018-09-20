@@ -10,9 +10,13 @@
 #include "./management/firmwareUpdate.h"
 #include "./management/sendHealth.h"
 
+
+
+#ifndef ESP32
 extern "C" {
   #include "user_interface.h"
 }
+#endif
 
 int _STATUS_LED=2;
 
@@ -28,14 +32,22 @@ typedef struct wifi_credentials WifiCredentials;
 WifiCredentials wifiCredentials[3];
 unsigned int numWifiCredentials=1;
 
+#ifndef ESP32
+int resetPin=D5;
+#else
+int resetPin=13;
+#endif
 String wifiFile="/wifi.json";
 
 
 
 bool _encripted=true;
 //WiFiServer httpServer(80);// create object
+#ifndef ESP32
 ESP8266WebServer webServer(80);
-
+#else
+WebServer webServer(80);
+#endif
 void resetALL(){
 		WiFi.begin("", "");
 		WiFi.disconnect(true);
@@ -49,14 +61,22 @@ void resetALL(){
 		Serial.println("You must remove this device from Konker plataform if registred, and redo factory configuration.");
 
 		delay(5000);
+		#ifndef ESP32
 		ESP.reset();
+		#else
+		ESP.restart();
+		#endif
 		delay(1000);
 }
 
 
 void setName(char newName[6]){
   strncpy(NAME, newName,6);
+  #ifndef ESP32
   String stringNewName=String(NAME) + String(ESP.getChipId());
+  #else
+  String stringNewName=String(NAME) + (uint32_t)ESP.getEfuseMac();
+  #endif
   strncpy(ChipId, stringNewName.c_str(),32);
 }
 
@@ -265,12 +285,16 @@ bool checkConnections(){
     Serial.println("Failed to connect");
     //TODO save in FS the failures
     delay(3000);
+    #ifndef ESP32
     ESP.reset();
+    #else
+    ESP.restart();
+    #endif
   }
 
-  Serial.println("Device connected to WiFi: " + (String)WiFi.SSID());
-  Serial.print("IP Address:");
-  Serial.println(WiFi.localIP());
+  //Serial.println("Device connected to WiFi: " + (String)WiFi.SSID());
+  //Serial.print("IP Address:");
+  //Serial.println(WiFi.localIP());
   
   return 1;
 }
@@ -302,8 +326,9 @@ bool checkForFactoryWifi(char *ssidConfig, char *ssidPassConfig, int powerLimit,
 	Serial.println("Searching for " + (String)ssidConfig + ":" + (String)ssidPassConfig);
 
 	//wifi power is weekened (remember to always set wifipower back to maximum 20.5dBm before atempting to connect to a customer WiFi)
+	#ifndef ESP32
 	WiFi.setOutputPower(2);
-
+	#endif
 
 	Serial.println(".");
 
@@ -327,7 +352,9 @@ bool checkForFactoryWifi(char *ssidConfig, char *ssidPassConfig, int powerLimit,
 		}
 		delay(100);
 	}
+	#ifndef ESP32
 	WiFi.setOutputPower(20.5);// return wifi power to maximum
+	#endif
 	return 0;
 }
 
@@ -409,20 +436,11 @@ bool getPlataformCredentials(char *configFilePath){
 }
 
 bool apConnected=0;
-void WiFiConnected(const WiFiEventSoftAPModeStationConnected&) {
-	//WIFI_EVENT_SOFTAPMODE_STACONNECTED:
-	Serial.println("Conectado");
-	apConnected=1;
-}
 
 
-void WiFiDisconnected(const WiFiEventSoftAPModeStationDisconnected&) {
-	//WIFI_EVENT_SOFTAPMODE_STADISCONNECTED
-	Serial.println("Desconectou");
-	apConnected=0;
-}
-
+#ifndef ESP32
 void WiFiEvent(WiFiEvent_t event) {
+	
 	switch(event){
 	case WIFI_EVENT_SOFTAPMODE_STACONNECTED:
 		Serial.println("Conectado");
@@ -434,7 +452,21 @@ void WiFiEvent(WiFiEvent_t event) {
 	break;
 	}
 }
+#endif
 
+
+
+void WiFiApConnected(system_event_id_t event) {
+	// SYSTEM_EVENT_AP_STACONNECTED:
+	Serial.println("Conectado");
+	apConnected=1;
+}
+
+void WiFiApDisConnected(system_event_id_t event) {
+	// SYSTEM_EVENT_AP_STADISCONNECTED:
+	Serial.println("Desconectou");
+	apConnected=0;
+}
 
 String macToString(const unsigned char* mac) {
   char buf[20];
@@ -443,8 +475,9 @@ String macToString(const unsigned char* mac) {
   return String(buf);
 }
 
-WiFiEventHandler stationConnectedHandler;
-WiFiEventHandler stationDisconnectedHandler;
+//WiFiEventHandler stationConnectedHandler;
+//WiFiEventHandler stationDisconnectedHandler;
+/*
 void onStationConnected(const WiFiEventSoftAPModeStationConnected& evt) {
   Serial.print("Station connected: ");
   Serial.println(macToString(evt.mac));
@@ -453,7 +486,7 @@ void onStationConnected(const WiFiEventSoftAPModeStationConnected& evt) {
 void onStationDisconnected(const WiFiEventSoftAPModeStationDisconnected& evt) {
   Serial.print("Station disconnected: ");
   Serial.println(macToString(evt.mac));
-}
+}*/
 
 
 void setupWiFi(char *apName){
@@ -462,11 +495,15 @@ void setupWiFi(char *apName){
 	WiFi.mode(WIFI_AP);
 
   // Append the last two bytes of the MAC (HEX'd) to string to make unique
-  uint8_t mac[WL_MAC_ADDR_LENGTH];
+  uint8_t mac[6];
   WiFi.softAPmacAddress(mac);
+
+	#ifndef ESP32
 	WiFi.onEvent(WiFiEvent,WIFI_EVENT_ANY);
-	//WiFi.onSoftAPModeStationConnected(WiFiConnected);
-	//WiFi.onSoftAPModeStationDisconnected(WiFiDisconnected);
+	#else
+	WiFi.onEvent(WiFiApConnected,SYSTEM_EVENT_AP_STACONNECTED);
+	WiFi.onEvent(WiFiApDisConnected,SYSTEM_EVENT_AP_STADISCONNECTED);
+	#endif
 
 	const IPAddress gateway_IP(192, 168, 4, 1); // gateway IP
 	const IPAddress subnet_IP( 255, 255, 255, 0); // standard subnet
@@ -680,7 +717,12 @@ bool startAPForWifiCredentials(char *apName, int timoutMilis){
 
 	WiFi.disconnect(true);
 	delay(1000);
+	#ifndef ESP32
 	(void)wifi_station_dhcpc_start();
+	#else
+	WiFi.config({ 0,0,0,0 }, { 0,0,0,0 }, { 0,0,0,0 });
+	//(void)tcpip_adapter_dhcpc_start(TCPIP_ADAPTER_IF_STA);
+	#endif
 
 	return 1;
 }
@@ -745,8 +787,8 @@ bool get_platform_credentials_from_configurator(){
 
 //encripted is a flag indicating to encript credentials.
 void konkerConfig(char rootURL[64], char productPefix[6], bool encripted){
-	pinMode(D5, OUTPUT);
-	digitalWrite(D5, HIGH);
+	pinMode(resetPin, OUTPUT);
+	digitalWrite(resetPin, HIGH);
 
   _encripted=encripted;
 
@@ -778,8 +820,8 @@ void konkerConfig(char rootURL[64], char productPefix[6], bool encripted){
 
 	//uncomment this line below for tests
 	//resetALL();
-	if (digitalRead(D5) == LOW){//reset and format FS all if D5 is low
-		Serial.println("D5 pin in LOW state. Formating FS.. (WAIT FOR REBOOT)");
+	if (digitalRead(resetPin) == LOW){//reset and format FS all if resetPin is low
+		Serial.println("resetPin pin in LOW state. Formating FS.. (WAIT FOR REBOOT)");
 		resetALL();
 	}
 
@@ -884,7 +926,11 @@ void konkerConfig(char rootURL[64], char productPefix[6], bool encripted){
 		if(!tryConnectClientWifi()){
 			Serial.println("Failed! Rebooting...");
 			delay(3000);
+			#ifndef ESP32
 			ESP.reset();
+			#else
+			ESP.restart();
+			#endif
 		}
 
 
@@ -897,11 +943,19 @@ void konkerConfig(char rootURL[64], char productPefix[6], bool encripted){
 
 		delay(1000);
 		Serial.println("Rebooting...");
+		#ifndef ESP32
 		ESP.reset();
+		#else
+		ESP.restart();
+		#endif
 	}else{
 		Serial.println("Timout! Rebooting...");
 		delay(3000);
+		   #ifndef ESP32
 		ESP.reset();
+		#else
+		ESP.restart();
+		#endif
 	}
 
 

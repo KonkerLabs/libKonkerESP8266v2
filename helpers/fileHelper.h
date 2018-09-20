@@ -1,17 +1,20 @@
 #ifndef fileHelper
 #define fileHelper
 
+#ifdef ESP32
+#include <SPIFFS.h>
+#endif
 bool spiffsMounted=0;
 
 bool spiffsMount(){
 	if (spiffsMounted==0){
 		//Serial.println("Mounting FS");
-	  if (SPIFFS.begin()) {
-	  	//Serial.println("File system mounted");
+	  if (SPIFFS.begin(true)) {
+	  	Serial.println("File system mounted");
 			spiffsMounted=1;
 			return 1;
 		}else{
-			//Serial.println("Failed to mount file system!");
+			Serial.println("Failed to mount file system!");
 			return 0;
 		}
 	}else{

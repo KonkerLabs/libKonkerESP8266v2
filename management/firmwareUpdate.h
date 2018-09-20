@@ -3,11 +3,24 @@
 #define firmwareUpdate
 
 #include "../helpers/globals.h"
+#ifndef ESP32
 #include <ESP8266HTTPClient.h>
+#else
+#include <HTTPClient.h>
+#endif
+
+#ifndef ESP32
 #include <ESP8266httpUpdate.h>
+#else
+#include <ESP32httpUpdate.h>
+#endif
+
+
+
 #include "../helpers/jsonhelper.h"
 
-#ifdef ESP8266
+
+#if !defined(ESP8266) || defined(ESP32)
 #include <functional>
 #define UPDATE_SUCCESS_CALLBACK_SIGNATURE std::function<void(char[16])> succes_update_callback
 #else
@@ -16,7 +29,12 @@
 
 unsigned long _last_time_update_check=0;
 
-class ESP8266HTTPKonkerUpdate: public ESP8266HTTPUpdate{
+
+
+
+
+#ifndef ESP32
+class ESPHTTPKonkerUpdate: public ESP8266HTTPUpdate{
   public:
   t_httpUpdate_return update(const String& host, uint16_t port, const String& uri = "/",
                                const String& currentVersion = ""){
@@ -28,6 +46,21 @@ class ESP8266HTTPKonkerUpdate: public ESP8266HTTPUpdate{
     return ESP8266HTTPUpdate::handleUpdate(http, currentVersion, false);
   }
 };
+#else
+class ESPHTTPKonkerUpdate: public ESP32HTTPUpdate{
+  public:
+  t_httpUpdate_return update(const String& host, uint16_t port, const String& uri = "/",
+                               const String& currentVersion = ""){
+    HTTPClient http;
+    http.begin(host, port, uri);
+
+    Serial.println("Authorizing.."); 
+    http.setAuthorization(device_login, device_pass);
+    return ESP32HTTPUpdate::handleUpdate(http, currentVersion, false);
+  }
+};
+#endif
+
 
 void getVersion(String strPayload, char *version){
 
@@ -147,7 +180,7 @@ void checkForUpdates(char const rootDomain[],int rootPort, char *expectedVersion
     if (hasUpdate(rootDomain, rootPort, version)){
       if(String(version).indexOf(String(expectedVersion))>=0 || String(version)==""){
         Serial.println("UPDATING...."); 
-        ESP8266HTTPKonkerUpdate ESPhttpKonkerUpdate;
+        ESPHTTPKonkerUpdate ESPhttpKonkerUpdate;
         ESPhttpKonkerUpdate.rebootOnUpdate(false);
         t_httpUpdate_return ret = ESPhttpKonkerUpdate.update(String(rootDomain), rootPort, String("/firmware/") + String(device_login) +String("/binary"));    
         switch(ret) {

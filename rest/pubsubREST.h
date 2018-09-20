@@ -2,7 +2,11 @@
 #define pubsubREST
 
 #include "../helpers/globals.h"
+#ifndef ESP32
 #include <ESP8266HTTPClient.h>
+#else
+#include <HTTPClient.h>
+#endif
 
 unsigned long _last_time_http_request=0;
 unsigned long _millis_delay_per_http_request=1000;
@@ -89,7 +93,7 @@ bool testHTTPSubscribeConn(){
 
 
   if (!subCode){
-    Serial.println("failed");
+    Serial.println("test failed");
     Serial.println("");
     http.end();   //Close connection
     return 0;
@@ -173,7 +177,7 @@ bool subHttp(char const channel[],CHANNEL_CALLBACK_SIGNATURE){
   int httpCode = http.GET();
 
 
-  //Serial.println("Subscribing to: " + pubURL + " httpcode:" + String(httpCode));
+
   Serial.print(">");
 
   subCode=interpretHTTPCode(httpCode);

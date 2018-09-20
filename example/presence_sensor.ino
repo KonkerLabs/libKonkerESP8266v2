@@ -70,11 +70,10 @@ void presencafunc(){
 
 // byte* payload, unsigned int length or you could use CHANNEL_CALLBACK_SIGNATURE
 void ledCallback(byte* payload, unsigned int length){
-    
     int i;
     int state=0;
     char *receivedMsg= new char[length];
-    Serial.print("Received message [");
+    Serial.print("Mensagem recebida [");
     Serial.print("led");
     Serial.print("] :");
     for (i = 0; i < length; i++) {
@@ -83,7 +82,7 @@ void ledCallback(byte* payload, unsigned int length){
     receivedMsg[i] = '\0';
 
     Serial.println(String(receivedMsg));
-    
+
     char ligado[8];
     if(parseJSON_data(receivedMsg,"ligado",ligado)){
         bool state =atoi(ligado);
@@ -93,9 +92,6 @@ void ledCallback(byte* payload, unsigned int length){
         Serial.println("Failed to parse");
     }
 
-   //dont remove these lines below. Risk of Out Of Memory. Since it is used-> char *receivedMsg= new char[length];
-   delete receivedMsg;
-   receivedMsg = NULL;
 }
 
 
@@ -129,6 +125,7 @@ void loop(){
     subHttp("led",ledCallback);
     
     if ((millis()-lasttimeCheck) > intPeriodoEnvio){
+
         enviaPresencas();
 
         lasttimeCheck = millis();

@@ -2,9 +2,18 @@
 #define globals
 
 #include <FS.h>
+#ifndef ESP32
 #include <ESP8266WiFi.h>
+#else
+#include <WiFi.h>
+#endif
 #include <DNSServer.h>
+#ifndef ESP32
 #include <ESP8266WebServer.h>
+#else
+#include <WebServer.h>
+#endif
+
 #include <ArduinoJson.h>
 
 
@@ -28,10 +37,12 @@ char *getChipId(){
 }
 
 bool interpretHTTPCode(int httpCode){
+  
   if (httpCode > 0 && httpCode<300) { //Check the returning code
     return 1;
 
   }else{
+    Serial.println(String(httpCode));
     return 0;
   }
 }

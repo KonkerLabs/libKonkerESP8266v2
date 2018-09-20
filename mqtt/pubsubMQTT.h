@@ -37,12 +37,14 @@ void callback(char* topic, byte* payload, unsigned int length) {
 bool connectMQTT(char r_server[], int r_port, char r_device_login[], char r_device_pass[]){
     if(client.connected()){
       Serial.print("Already connected to MQTT broker ");
-      return 1;
+      //return 1;
+    }else{
+      Serial.print("Trying to connect to MQTT broker ");
     }
-    Serial.print("Trying to connect to MQTT broker ");
+    
 
 
-	  Serial.print(" URI:" + String(server) + " Port:" + String(port) + ", ");
+	  Serial.print(" URI:" + String(r_server) + " Port:" + String(r_port) + ", ");
 
 	  client.setServer(r_server, r_port);
 	  client.setCallback(callback);
@@ -63,7 +65,11 @@ bool connectMQTT(char r_server[], int r_port, char r_device_login[], char r_devi
       Serial.println("");
       appendToFile(healthFile,(char*)"1", _mqttFailureAdress);
       delay(3000);
+      #ifndef ESP32
       ESP.reset();
+      #else
+      ESP.restart();
+      #endif
       return 0;
 		}
 }
@@ -115,7 +121,11 @@ bool pubMQTT(char const channel[], char const msg[]){
     failedComm=1;
     appendToFile(healthFile,(char*)"1", _mqttFailureAdress);
     delay(3000);
+    #ifndef ESP32
     ESP.reset();
+    #else
+    ESP.restart();
+    #endif
     return 0;
   }else{
     Serial.println("sucess");
@@ -144,7 +154,11 @@ bool subMQTT(char const channel[],CHANNEL_CALLBACK_SIGNATURE){
     failedComm=1;
     appendToFile(healthFile,(char*)"1", _mqttFailureAdress);
     delay(3000);
+    #ifndef ESP32
     ESP.reset();
+    #else
+    ESP.restart();
+    #endif
     return 0;
   }else{
     addSubChannelTuple(topic,chan_callback);
