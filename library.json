@@ -1,11 +1,11 @@
 {
   "name": "KonkerESP",
-  "keywords": "Konker, ESP8266, ESP32, MQTT, rest, iot",
-  "description": "ESP8266 Library for Konker enabled products",
+  "keywords": "Konker, ESP32, MQTT, rest, iot",
+  "description": "ESP32 Library for Konker enabled products",
   "repository":
   {
     "type": "git",
-    "url": "https://github.com/KonkerLabs/KonkerESP8266"
+    "url": "https://github.com/KonkerLabs/KonkerESP/ESP32"
   },
   "authors":
   [
@@ -30,7 +30,7 @@
   {
     "name": "ArduinoJson",
     "authors": "Benoit Blanchon",
-		"url": "https://github.com/bblanchon/ArduinoJson.git",
+    "url": "https://github.com/bblanchon/ArduinoJson.git",
     "frameworks": "arduino"
   },
   {
@@ -42,10 +42,11 @@
   {
     "name": "ESP32httpUpdate",
     "authors": "Matej Sychra",
-		"url": "https://github.com/suculent/esp32-http-update.git"
+    "url": "https://github.com/suculent/esp32-http-update.git",
+    "platforms": "espressif32"
   }
   ],
   "version": "2.0.0",
   "frameworks": "arduino",
-  "platforms": "*"
+  "platforms": ["espressif8266", "espressif32"]
 }

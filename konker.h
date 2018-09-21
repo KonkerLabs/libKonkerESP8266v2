@@ -438,7 +438,20 @@ bool getPlataformCredentials(char *configFilePath){
 bool apConnected=0;
 
 
-#ifndef ESP32
+#ifdef ESP32
+void WiFiApConnected(system_event_id_t event) {
+	// SYSTEM_EVENT_AP_STACONNECTED:
+	Serial.println("Conectado");
+	apConnected=1;
+}
+
+void WiFiApDisConnected(system_event_id_t event) {
+	// SYSTEM_EVENT_AP_STADISCONNECTED:
+	Serial.println("Desconectou");
+	apConnected=0;
+}
+
+#else
 void WiFiEvent(WiFiEvent_t event) {
 	
 	switch(event){
@@ -456,17 +469,7 @@ void WiFiEvent(WiFiEvent_t event) {
 
 
 
-void WiFiApConnected(system_event_id_t event) {
-	// SYSTEM_EVENT_AP_STACONNECTED:
-	Serial.println("Conectado");
-	apConnected=1;
-}
 
-void WiFiApDisConnected(system_event_id_t event) {
-	// SYSTEM_EVENT_AP_STADISCONNECTED:
-	Serial.println("Desconectou");
-	apConnected=0;
-}
 
 String macToString(const unsigned char* mac) {
   char buf[20];
@@ -474,19 +477,6 @@ String macToString(const unsigned char* mac) {
            mac[0], mac[1], mac[2], mac[3], mac[4], mac[5]);
   return String(buf);
 }
-
-//WiFiEventHandler stationConnectedHandler;
-//WiFiEventHandler stationDisconnectedHandler;
-/*
-void onStationConnected(const WiFiEventSoftAPModeStationConnected& evt) {
-  Serial.print("Station connected: ");
-  Serial.println(macToString(evt.mac));
-}
-
-void onStationDisconnected(const WiFiEventSoftAPModeStationDisconnected& evt) {
-  Serial.print("Station disconnected: ");
-  Serial.println(macToString(evt.mac));
-}*/
 
 
 void setupWiFi(char *apName){
