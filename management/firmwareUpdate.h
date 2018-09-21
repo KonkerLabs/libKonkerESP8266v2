@@ -109,12 +109,14 @@ void updateSucessCallBack(char *version){
   Serial.println("");
 }
 
-bool hasUpdate(char const rootDomain[],int rootPort, char *version){
+bool hasUpdate(char *rootDomain,int rootPort, char *version){
   bool subCode=0;
-
-  String fwUpdateURL= "http://" + String(rootDomain) + String (":") + String(rootPort) + String("/firmware/") + String(device_login); 
+  Serial.println("Checking for updates...");
   char buffer[100];
   char bffPort[6];
+  String sPort=(String)rootPort;
+  sPort.toCharArray(bffPort, 6);
+
   if (String(rootDomain).indexOf("http://", 0)>0){
     strcpy (buffer,rootDomain);
     strcat (buffer,":");
@@ -135,11 +137,12 @@ bool hasUpdate(char const rootDomain[],int rootPort, char *version){
 
   HTTPClient http;  //Declare an object of class HTTPClient
   http.addHeader("Content-Type", "application/json");
+  http.setTimeout(2000);
   http.setAuthorization(device_login, device_pass);
   http.begin((String)buffer);  //Specify request destination
   int httpCode = http.GET();
 
-  Serial.println("Checking update: " + fwUpdateURL+ "; httpcode:" + String(httpCode));
+  Serial.println("Checking update: " + String(buffer) + "; httpcode:" + String(httpCode));
   Serial.print(">");
 
   subCode=interpretHTTPCode(httpCode);
@@ -164,7 +167,7 @@ bool hasUpdate(char const rootDomain[],int rootPort, char *version){
   return 0;
 }
 
-void checkForUpdates(char const rootDomain[],int rootPort, char *expectedVersion, UPDATE_SUCCESS_CALLBACK_SIGNATURE){
+void checkForUpdates(char *rootDomain,int rootPort, char *expectedVersion, UPDATE_SUCCESS_CALLBACK_SIGNATURE){
     if (_last_time_update_check!=0){
       //throtle this call at maximum 1 per minute
       if ((millis()-_last_time_update_check) < 60000){
@@ -172,6 +175,7 @@ void checkForUpdates(char const rootDomain[],int rootPort, char *expectedVersion
           return;
       }
     }
+
 
     _last_time_update_check = millis();
 
@@ -201,6 +205,7 @@ void checkForUpdates(char const rootDomain[],int rootPort, char *expectedVersion
 
 void checkForUpdates(){
   char expectedVersion[16]="";
+
   checkForUpdates(_rootDomain, _rootPort, expectedVersion, updateSucessCallBack);
 }
 

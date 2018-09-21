@@ -1,6 +1,6 @@
 {
-  "name": "KonkerESP8266",
-  "keywords": "Konker, ESP8266, MQTT, rest, iot",
+  "name": "KonkerESP",
+  "keywords": "Konker, ESP8266, ESP32, MQTT, rest, iot",
   "description": "ESP8266 Library for Konker enabled products",
   "repository":
   {
