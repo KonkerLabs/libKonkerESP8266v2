@@ -24,7 +24,7 @@
   {
     "name": "PubSubClient",
     "homepage": "http://pubsubclient.knolleary.net",
-		"url": "https://github.com/knolleary/pubsubclient.git",
+    "url": "https://github.com/knolleary/pubsubclient.git",
     "frameworks": "arduino"
   },
   {
@@ -48,5 +48,5 @@
   ],
   "version": "2.0.0",
   "frameworks": "arduino",
-  "platforms": ["espressif8266", "espressif32"]
+  "platforms": "espressif32"
 }
