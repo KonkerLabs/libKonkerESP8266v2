@@ -3,7 +3,11 @@
 #define sendHealth
 
 #include "../helpers/globals.h"
+#ifndef ESP32
 #include <ESP8266HTTPClient.h>
+#else
+#include <HTTPClient.h>
+#endif
 #include "../helpers/jsonhelper.h"
 #include "./helpers/fileHelper.h"
 #include "./rest/pubsubREST.h"

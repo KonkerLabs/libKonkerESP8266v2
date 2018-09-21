@@ -38,6 +38,12 @@
     "authors": "Chris Ellis",
 		"url": "https://github.com/intrbiz/arduino-crypto.git"
   }
+  ,
+  {
+    "name": "ESP32httpUpdate",
+    "authors": "Matej Sychra",
+		"url": "https://github.com/suculent/esp32-http-update.git"
+  }
   ],
   "version": "2.0.0",
   "frameworks": "arduino",
