@@ -1,4 +1,4 @@
-# KonkerESP8266
+# KonkerESP
 
 Include konker.h or konkerMQTT.h  to work with this library
 
