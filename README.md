@@ -96,9 +96,14 @@ PROCEDURE
 
 2 -THE DEVICE WILL REBOOT, AND CREATE A HOTSPOT WITH ITS NAME, EXAMPLE: S010113610232
    CONNECT TO THE HOTSPOT AND MAKE A GET REQUEST LIKE THE EXAMPLE BELOW TO SEND THE WIFI Credentials
-   http://192.168.4.1/wifisave?s=SSID_NAME&p=ENCRIPTED_SSID_PASSWORD
+   You could save up to 3 diferrent wifi credentials for 3 different wifi
+   http://192.168.4.1/wifisave?s0=SSID_NAME&p0=ENCRIPTED_SSID_PASSWORD
+   More than one credential will be
+   http://192.168.4.1/wifisave?s0=SSID_NAME1&p0=ENCRIPTED_SSID_PASSWORD1&s1=SSID_NAME2&p1=ENCRIPTED_SSID_PASSWORD2
       OR IF konkerConfig encription flag is off
-   http://192.168.4.1/wifisave?s=SSID_NAME&p=SSID_PASSWORD
+   http://192.168.4.1/wifisave?s0=SSID_NAME&p0=SSID_PASSWORD
+   
+ 
    
    
    
