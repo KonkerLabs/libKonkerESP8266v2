@@ -1,5 +1,5 @@
 {
-  "name": "KonkerESP",
+  "name": "KonkerESP8266",
   "keywords": "Konker,espressif8266, MQTT, rest, iot",
   "description": "espressif8266 Library for Konker enabled products",
   "repository":
@@ -46,7 +46,7 @@
     "platforms": "espressif8266"
   }
   ],
-  "version": "2.0.0",
+  "version": "2.0.1",
   "frameworks": "arduino",
   "platforms": "espressif8266"
 }
