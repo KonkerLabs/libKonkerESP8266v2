@@ -31,7 +31,8 @@
     "name": "ArduinoJson",
     "authors": "Benoit Blanchon",
     "url": "https://github.com/bblanchon/ArduinoJson.git",
-    "frameworks": "arduino"
+    "frameworks": "arduino",
+	  "version":"~5.13.2"
   },
   {
     "name": "Crypto",
