@@ -23,7 +23,7 @@ If set false, the password has to be sent in plain text.
 
 Example:
 
-````
+```
 void setup(){
    Example: (char*)"S0101"
     Serial.begin(115200);
@@ -34,11 +34,13 @@ void setup(){
     Serial.println("Setup finished");
 }
 ```
+
 After the setup in the main loop put:
 
 ```
 konkerLoop();
 ```
+
 Example:
 
 ```
@@ -55,7 +57,9 @@ You could now use  the functions:
 pubHTTP(<channel>, <message>)
 pubMQTT(<channel>, <message>)  <-- to use MQTT functions you have to include konkerMQTT.h
 ```
+
 Example:
+
 ```
 StaticJsonBuffer<220> jsonBuffer;
 JsonObject& jsonMSG = jsonBuffer.createObject();
@@ -77,6 +81,7 @@ if(!pubMQTT(status_channel, mensagemjson)){
     Serial.println("Failed to publish message");
 }
 ```
+
 subHTTP(<channel>, <callback function for this channel>)  <-- subscriptions in HTTP are a GET request. To verify if the value in the channel had changed you have to make polling.
 
 subHTTP usually have to be in a loop or schedulled funcion.
@@ -90,9 +95,10 @@ The callback function must have this format:
 
 void function_name(byte* payload, unsigned int length){
 
-Device credentials and setup
+## Device credentials and setup
 
-PROCEDURE
+### PROCEDURE
+
 1. THE DEVICE HAS TO BE CONFIGURED IN FACTORY WITH THE KONKER PLATFORM CREDENTIALS
    THE DEVICE SEARCH FOR 
    1. wifi: KonkerDevNetwork  
@@ -104,24 +110,22 @@ PROCEDURE
 1. THE DEVICE WILL REBOOT, AND CREATE A HOTSPOT WITH ITS NAME, EXAMPLE: S010113610232
    CONNECT TO THE HOTSPOT AND MAKE A GET REQUEST LIKE THE EXAMPLE BELOW TO SEND THE WIFI Credentials
    You could save up to 3 diferrent wifi credentials for 3 different wifi
-   ```
-   http://192.168.4.1/wifisave?s0=SSID_NAME&p0=ENCRIPTED_SSID_PASSWORD
-   ```
+```
+http://192.168.4.1/wifisave?s0=SSID_NAME&p0=ENCRIPTED_SSID_PASSWORD
+```
    More than one credential will be
-   ```
-   http://192.168.4.1/wifisave?s0=SSID_NAME1&p0=ENCRIPTED_SSID_PASSWORD1&s1=SSID_NAME2&p1=ENCRIPTED_SSID_PASSWORD2
-   ```
+```
+http://192.168.4.1/wifisave?s0=SSID_NAME1&p0=ENCRIPTED_SSID_PASSWORD1&s1=SSID_NAME2&p1=ENCRIPTED_SSID_PASSWORD2
+```
       OR IF konkerConfig encription flag is off
-   ```     
-   http://192.168.4.1/wifisave?s0=SSID_NAME&p0=SSID_PASSWORD
-   ```
+```     
+http://192.168.4.1/wifisave?s0=SSID_NAME&p0=SSID_PASSWORD
+```
  
    
    
    
-   
-   
- #Firmware updates
+ ## Firmware updates
  
  For firmware updates check just call the function: checkForUpdates();
  Tip, dont leave the execution of checkForUpdates(); in the main loop.  Call this function hourly or dayly for example.
