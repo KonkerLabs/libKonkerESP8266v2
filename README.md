@@ -6,7 +6,7 @@ Include konker.h or konkerMQTT.h  to work with this library
 
 Initilize the konker lib at setup
 
-'''konkerConfig(<root server>,<model prefix>,<encriptation flag>);'''
+```konkerConfig(<root server>,<model prefix>,<encriptation flag>);```
 
 <root server> : domain / ip of the Konker plataform
 
