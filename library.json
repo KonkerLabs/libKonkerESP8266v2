@@ -1,5 +1,5 @@
 {
-  "name": "KonkerESP8266",
+  "name": "libKonkerESP8266v2",
   "keywords": "Konker,espressif8266, MQTT, rest, iot",
   "description": "espressif8266 Library for Konker enabled products",
   "repository":
@@ -12,16 +12,17 @@
     {
       "name": "Érico Netto",
       "email": "erico@konkerlabs.com",
-      "url": "https://www.linkedin.com/in/ericonetto",
-      "maintainer": true
+      "url": "https://www.linkedin.com/in/ericonetto"
     },
     {
       "name": "Luis Gomes Gonzales",
-      "email": "luis@konkerlabs.com"
+      "email": "luis@konkerlabs.com",
+      "maintainer": true
     },
     {
       "name": "Alexandre Junqueira",
-      "email": "alexjunq@konkerlabs.com"
+      "email": "alexjunq@konkerlabs.com",
+      "maintainer": true
     }
   ],
   "dependencies":[
@@ -44,10 +45,11 @@
   }
   ,
   {
-    "name": "KonkerESP",
-    "url": "https://github.com/KonkerLabs/KonkerESP.git",
-    "url":"file://../../../../KonkerESP",
-    "platforms": "espressif8266"
+    "name": "libKonkerESP",
+    "url": "https://github.com/KonkerLabs/libKonkerESP.git",
+    "_url":"file://../../../../KonkerESP",
+    "platforms": "espressif8266",
+    "version":">3.0.0"
   }
   ],
   "version": "3.0.4",
