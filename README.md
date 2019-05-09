@@ -8,15 +8,14 @@ Initilize the konker lib at setup
 
 ```konkerConfig(<root server>,<model prefix>,<encriptation flag>);```
 
-<root server> : domain / ip of the Konker plataform
+where:
 
-Example: (char*)"data.demo.konkerlabs.net:80"
+* root server : is the domain / ip of the Konker plataform, for example: *(char*)"data.demo.konkerlabs.net:80"*
+* model prefix : A user defined prefix to especify the type of the device, for example LIGHT, MOTOR, etc.
 
-<model prefix>: A user defined prefix to especify the type of the device, for example LIGHT, MOTOR, etc.
+   Example: (char*)"S0101"
 
-Example: (char*)"S0101"
-
-<encriptation flag>: Boolean flag.  If set true, the WiFi password will be expected to be sent encripted to the device.
+* encriptation flag: Boolean flag.  If set true, the WiFi password will be expected to be sent encripted to the device.
 
 The encriptation keys is SSID and the Konker password  of the device. To understand better please open the file konker.k and verify the getWifiCredentialsEncripted function
 
