@@ -23,7 +23,9 @@ If set false, the password has to be sent in plain text.
 
 Example:
 
+````
 void setup(){
+   Example: (char*)"S0101"
     Serial.begin(115200);
     Serial.println("Setup");
 
@@ -31,28 +33,30 @@ void setup(){
 
     Serial.println("Setup finished");
 }
-
+```
 After the setup in the main loop put:
 
+```
 konkerLoop();
-
+```
 Example:
 
+```
 void loop(){
 
     konkerLoop();
 
 }
-
+```
 
 You could now use  the functions:
 
+```
 pubHTTP(<channel>, <message>)
-
 pubMQTT(<channel>, <message>)  <-- to use MQTT functions you have to include konkerMQTT.h
-
+```
 Example:
-
+```
 StaticJsonBuffer<220> jsonBuffer;
 JsonObject& jsonMSG = jsonBuffer.createObject();
 
@@ -72,7 +76,7 @@ if(!pubMQTT(status_channel, mensagemjson)){
 }else{
     Serial.println("Failed to publish message");
 }
-
+```
 subHTTP(<channel>, <callback function for this channel>)  <-- subscriptions in HTTP are a GET request. To verify if the value in the channel had changed you have to make polling.
 
 subHTTP usually have to be in a loop or schedulled funcion.
@@ -89,21 +93,28 @@ void function_name(byte* payload, unsigned int length){
 Device credentials and setup
 
 PROCEDURE
-1 - THE DEVICE HAS TO BE CONFIGURED IN FACTORY WITH THE KONKER PLATFORM CREDENTIALS
-  THE DEVICE SEARCH FOR wifi: KonkerDevNetwork  password: konkerkonker123
+1. THE DEVICE HAS TO BE CONFIGURED IN FACTORY WITH THE KONKER PLATFORM CREDENTIALS
+   THE DEVICE SEARCH FOR 
+   1. wifi: KonkerDevNetwork  
+   1. password: konkerkonker123
   when connected, the device will search for the platform credentials file in the root folder from the host hotspot Example: \S010113610232
   THE FILE HAS THIS FORMAT EXAMPLE:
     {"srv":"mqtt.demo.konkerlabs.net","prt":"1883","usr":"jnu56qt1bb1i","pwd":"3S7usR9g5K","prx":"data"}
 
-2 -THE DEVICE WILL REBOOT, AND CREATE A HOTSPOT WITH ITS NAME, EXAMPLE: S010113610232
+1. THE DEVICE WILL REBOOT, AND CREATE A HOTSPOT WITH ITS NAME, EXAMPLE: S010113610232
    CONNECT TO THE HOTSPOT AND MAKE A GET REQUEST LIKE THE EXAMPLE BELOW TO SEND THE WIFI Credentials
    You could save up to 3 diferrent wifi credentials for 3 different wifi
+   ```
    http://192.168.4.1/wifisave?s0=SSID_NAME&p0=ENCRIPTED_SSID_PASSWORD
+   ```
    More than one credential will be
+   ```
    http://192.168.4.1/wifisave?s0=SSID_NAME1&p0=ENCRIPTED_SSID_PASSWORD1&s1=SSID_NAME2&p1=ENCRIPTED_SSID_PASSWORD2
+   ```
       OR IF konkerConfig encription flag is off
+   ```     
    http://192.168.4.1/wifisave?s0=SSID_NAME&p0=SSID_PASSWORD
-   
+   ```
  
    
    
