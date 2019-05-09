@@ -45,10 +45,9 @@
   ,
   {
     "name": "KonkerESP",
-    "* authors": "Érico Netto",
-    "* url": "https://github.com/KonkerLabs/KonkerESP.git",
+    "url": "https://github.com/KonkerLabs/KonkerESP.git",
     "url":"file://../../../../KonkerESP",
-    "* platforms": "espressif8266"
+    "platforms": "espressif8266"
   }
   ],
   "version": "3.0.4",
